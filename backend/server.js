@@ -1,28 +1,33 @@
-// server.js (این فایل را در پوشه بکند خود بسازید)
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;  // تغییر مهم: برای Render
 
-const DB_URI = 'mongodb+srv://Ratingbot:13213822Rt@cluster0.ngt46.mongodb.net';
-mongoose.connect(DB_URI)
-  .then(() => console.log('Database connected successfully!'))
-  .catch(err => console.error('Database connection error:', err));
+// ---------- CORS تنظیمات ----------
+app.use(cors({
+  origin: [
+    'https://thesis-survey-trzp.vercel.app',  // سایت تو روی Vercel
+    'https://thesis-survey.vercel.app',       // اگر اینطور نامگذاری کنی
+    'http://localhost:5173'                   // برای توسعه محلی
+  ],
+  credentials: true
+}));
 
-  
-
-// Middleware
-app.use(cors());
 // افزایش حجم مجاز برای آپلود عکس‌های هیت‌مپ
 app.use(bodyParser.json({ limit: '50mb' })); 
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
-// --- Schemas ---
+// ---------- اتصال به MongoDB ----------
+const DB_URI = process.env.MONGO_URI || 'mongodb+srv://Ratingbot:13213822Rt@cluster0.ngt46.mongodb.net/surveyDB?retryWrites=true&w=majority';
 
+mongoose.connect(DB_URI)
+  .then(() => console.log('✅ Database connected successfully!'))
+  .catch(err => console.error('❌ Database connection error:', err));
+
+// ---------- Schemas ----------
 const QuestionSchema = new mongoose.Schema({
   id: String,
   type: String,
@@ -50,46 +55,81 @@ const ResponseSchema = new mongoose.Schema({
 const Survey = mongoose.model('Survey', SurveySchema);
 const Response = mongoose.model('Response', ResponseSchema);
 
-// --- Routes ---
+// ---------- Routes ----------
+
+// تست سرور
+app.get('/', (req, res) => {
+  res.json({ 
+    message: '🚀 Backend is running!',
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // دریافت همه پرسشنامه‌ها
 app.get('/api/surveys', async (req, res) => {
-  const surveys = await Survey.find();
-  res.json(surveys);
+  try {
+    const surveys = await Survey.find();
+    res.json(surveys);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ذخیره پرسشنامه جدید
 app.post('/api/surveys', async (req, res) => {
-  const newSurvey = new Survey(req.body);
-  await newSurvey.save();
-  res.json({ message: "Survey saved", id: newSurvey.id });
+  try {
+    const newSurvey = new Survey(req.body);
+    await newSurvey.save();
+    res.json({ 
+      message: "✅ Survey saved successfully", 
+      id: newSurvey.id 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // حذف پرسشنامه
 app.delete('/api/surveys/:id', async (req, res) => {
-  await Survey.deleteOne({ id: req.params.id });
-  // پاک کردن پاسخ‌های مربوطه
-  await Response.deleteMany({ surveyId: req.params.id });
-  res.json({ message: "Deleted" });
+  try {
+    await Survey.deleteOne({ id: req.params.id });
+    // پاک کردن پاسخ‌های مربوطه
+    await Response.deleteMany({ surveyId: req.params.id });
+    res.json({ message: "🗑️ Survey and responses deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ثبت پاسخ کاربر
 app.post('/api/responses', async (req, res) => {
-  const newResponse = new Response({
-    ...req.body,
-    id: Math.random().toString(36).substr(2, 9) // تولید ID در سرور
-  });
-  await newResponse.save();
-  res.json({ message: "Response saved" });
+  try {
+    const newResponse = new Response({
+      ...req.body,
+      id: Math.random().toString(36).substr(2, 9), // تولید ID در سرور
+      submittedAt: Date.now()
+    });
+    await newResponse.save();
+    res.json({ message: "✅ Response saved successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // دریافت پاسخ‌های یک پرسشنامه خاص برای ادمین
 app.get('/api/responses/:surveyId', async (req, res) => {
-  const responses = await Response.find({ surveyId: req.params.surveyId });
-  res.json(responses);
+  try {
+    const responses = await Response.find({ surveyId: req.params.surveyId });
+    res.json(responses);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// اجرای سرور
+// ---------- اجرای سرور ----------
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📡 Local: http://localhost:${PORT}`);
+  console.log(`🌐 Test: http://localhost:${PORT}/api/surveys`);
 });

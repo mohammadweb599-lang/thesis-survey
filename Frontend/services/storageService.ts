@@ -2,7 +2,7 @@ import { Survey, SurveyResponse } from '../types';
 
 // آدرس سرور بکند شما (در حالت لوکال معمولا پورت 5000 یا 3000 است)
 // وقتی سایت را آپلود کنید، این آدرس باید آدرس دامنه شما باشد.
-const API_BASE_URL = 'https://my-survey-api.onrender.com/api';
+const API_BASE_URL = 'https://thesis-survey-et1e.onrender.com/api';
 
 export const fetchSurveys = async (): Promise<Survey[]> => {
   try {

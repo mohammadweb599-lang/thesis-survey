@@ -9,9 +9,10 @@ const PORT = process.env.PORT || 5000;  // تغییر مهم: برای Render
 // ---------- CORS تنظیمات ----------
 app.use(cors({
   origin: [
-    'https://thesis-survey-trzp.vercel.app',  // سایت تو روی Vercel
-    'https://thesis-survey.vercel.app',       // اگر اینطور نامگذاری کنی
-    'http://localhost:5173'                   // برای توسعه محلی
+    'https://mohammadweb599-lang.github.io',  // ✅ دامنه اصلی GitHub Pages شما
+    'https://thesis-survey-trzp.vercel.app',
+    'https://thesis-survey.vercel.app',
+    'http://localhost:5173'
   ],
   credentials: true
 }));

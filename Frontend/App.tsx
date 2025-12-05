@@ -457,8 +457,13 @@ const Analytics = ({ surveyId, onNavigate }: { surveyId: string, onNavigate: (pa
     loadData();
   }, [surveyId]);
 
-  const loadData = async () => {
-    setLoading(true);
+const loadData = async () => {
+  setLoading(true);
+  
+  // این خط رو اضافه کن:
+  console.log('در حال بارگذاری تحلیل برای:', surveyId);
+  
+  try {
     const surveys = await API.fetchSurveys();
     const s = surveys.find(x => x.id === surveyId);
     if (s) {
@@ -466,9 +471,16 @@ const Analytics = ({ surveyId, onNavigate }: { surveyId: string, onNavigate: (pa
       const res = await API.fetchResponses(s.id);
       setResponses(res);
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    // این خط رو اضافه کن:
+    console.error('خطا در loadData:', error);
+    alert('خطا در بارگذاری داده‌ها');
+  }
+  
+  setLoading(false);
+};
 
+  
   const generateData = async () => {
     setGeneratingData(true);
     await API.generateMockData(surveyId, 200);
@@ -528,8 +540,11 @@ const Analytics = ({ surveyId, onNavigate }: { surveyId: string, onNavigate: (pa
         <div className="grid gap-8 lg:grid-cols-2">
             {/* Visualizations */}
             <div className="space-y-8">
-                {survey.questions.map((q, idx) => (
-                    <div key={q.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+              {survey.questions && survey.questions.length > 0 ? (
+  survey.questions.map((q, idx) => {
+    if (!q || !q.type) return null;
+    
+    return (                    <div key={q.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
                         <h3 className="font-bold mb-4 text-gray-700 flex items-center gap-2 pb-2 border-b border-gray-100">
                             <span className="bg-slate-800 text-white px-2 py-0.5 rounded text-sm">Q{idx + 1}</span>
                             {q.title}
@@ -538,8 +553,7 @@ const Analytics = ({ surveyId, onNavigate }: { surveyId: string, onNavigate: (pa
                         {q.type === QuestionType.MULTIPLE_CHOICE && (
                             <div className="h-72 ltr">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={q.options!.map((opt, i) => ({
-                                        name: opt,
+                                    <BarChart data={(q.options || ['گزینه ۱', 'گزینه ۲']).map((opt, i) => ({                                        name: opt,
                                         count: responses.filter(r => r.answers.find(a => a.questionId === q.id)?.choiceIndex === i).length
                                     }))}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -547,7 +561,7 @@ const Analytics = ({ surveyId, onNavigate }: { surveyId: string, onNavigate: (pa
                                         <YAxis allowDecimals={false} tick={{fontSize: 12, fill: '#6b7280'}} axisLine={false} tickLine={false} />
                                         <Tooltip cursor={{fill: '#f3f4f6'}} contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}} />
                                         <Bar dataKey="count" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={40}>
-                                            {q.options!.map((entry, index) => (
+                                            {q.option|| ['گزینه ۱', 'گزینه ۲']).map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#3b82f6' : '#60a5fa'} />
                                             ))}
                                         </Bar>
